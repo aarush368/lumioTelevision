@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Release keystore - do not commit
+*.keystore
+app/*.keystore

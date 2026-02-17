@@ -24,12 +24,36 @@ android {
         buildConfigField("String", "NEWS_API_KEY", "\"$apiKey\"")
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("lumio-release.keystore")
+            storePassword = "lumio@123"
+            keyAlias = "lumio"
+            keyPassword = "lumio@123"
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
+    packaging {
+        resources {
+            excludes += listOf(
+                "**/baseline-profile.txt",
+                "**/baseline-prof.txt",
+                "**/*.prof",
+                "**/*.profm",
+                "assets/dexopt/baseline.prof",
+                "assets/dexopt/baseline.profm",
+                "META-INF/androidx.profileinstaller_profileinstaller.version"
             )
         }
     }
@@ -72,4 +96,11 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+// Avoid INSTALL_BASELINE_PROFILE_FAILED: do not merge baseline/art profile into release APK
+tasks.configureEach {
+    if (name == "mergeReleaseArtProfile" || name == "compileReleaseArtProfile") {
+        enabled = false
+    }
 }

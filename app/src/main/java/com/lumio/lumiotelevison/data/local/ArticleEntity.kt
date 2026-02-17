@@ -1,5 +1,6 @@
 package com.lumio.lumiotelevison.data.local
 
+import androidx.annotation.Keep
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.lumio.lumiotelevison.data.model.NewsArticle
@@ -9,6 +10,7 @@ import com.lumio.lumiotelevison.data.model.NewsArticle
  * Persists the last successful fetch so headlines are available without network.
  */
 @Entity(tableName = "cached_articles")
+@Keep
 data class ArticleEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val sourceName: String,
