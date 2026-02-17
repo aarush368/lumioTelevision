@@ -9,8 +9,8 @@ Android TV app that displays news headlines with **long-press DPAD-Down to refre
 - **Headlines + summaries** – Each item shows headline and a short summary; **press OK (DPAD center)** on an item to expand and show the full summary.
 - **TV-optimized** – Layout and typography tuned for 1080p TV viewport; focusable list for D-pad navigation.
 - **Long-press DPAD-Down to refresh** – Hold **DPAD Down** for about 0.8 seconds to refresh headlines. A “Refreshing…” overlay is shown while loading.
-- **Article images** – Thumbnail images loaded with [Coil](https://coil-kt.github.io/coil/) (memory cache, crossfade).
-- **Offline caching** – Last successful result is kept in memory; if a refresh fails (e.g. no network), the previous list is still shown with an error message.
+- **Article images** – Thumbnails loaded with [Coil](https://coil-kt.github.io/coil/): decoded at display size (320×180) to save memory, with memory + disk cache and crossfade for efficient loading and retention.
+- **Offline caching** – Headlines are stored in a **Room** database after each successful fetch. When the app is opened or refreshed without network, cached articles are shown so the list works offline.
 
 ## Requirements
 
@@ -65,11 +65,13 @@ app/src/main/java/com/lumio/lumiotelevison/
 ├── MainActivity.kt              # Long-press DPAD-Down handled here
 ├── data/
 │   ├── model/NewsArticle.kt     # Domain model
+│   ├── local/                   # Room DB for offline cache (ArticleEntity, ArticleDao, AppDatabase)
 │   ├── remote/                  # Retrofit API, DTOs, OkHttp client
-│   └── repository/NewsRepository.kt  # Fetch + in-memory cache
+│   └── repository/NewsRepository.kt  # Fetch, Room cache, in-memory fallback
 ├── ui/
 │   ├── NewsViewModel.kt         # UI state, load/refresh
-│   ├── components/NewsItem.kt   # Single row: image, headline, expandable summary
+│   ├── NewsViewModelFactory.kt  # Injects repository with Application context for Room
+│   ├── components/NewsItem.kt  # Row: image (Coil, size-optimized), headline, expandable summary
 │   └── screens/NewsScreen.kt    # List, loading/error, refresh hint
 └── ui/theme/                    # TV Material3 theme
 ```
@@ -77,14 +79,21 @@ app/src/main/java/com/lumio/lumiotelevison/
 ## Key implementation details
 
 - **Refresh trigger** – `MainActivity.dispatchKeyEvent()` starts a 800 ms timer on `KEYCODE_DPAD_DOWN` down; if the key is still down when the timer fires, `NewsViewModel.loadHeadlines()` is called. On key up, the timer is cancelled so a short press only moves focus.
-- **Errors** – Missing API key, HTTP errors, and network failures are surfaced in the UI; the last successful list is retained when a refresh fails.
-- **Images** – Coil’s `AsyncImage` with a fixed size and `ContentScale.Crop`; Coil’s default memory cache is used.
+- **Errors** – Missing API key, HTTP errors, and network failures are surfaced in the UI. When the network fails, the repository returns cached articles from Room if available.
+- **Offline** – `NewsRepository.getTopHeadlines()` writes to Room on success and reads from Room on failure, so the app shows the last fetched list when offline.
+- **Images** – Coil’s `AsyncImage` with `.size(320, 180)` so images are decoded at display size (memory-efficient). Coil’s default memory and disk caches retain images across scrolls and app restarts.
 
 ## Screenshots and video
 
-For submission, include:
+### App showing news headline list
 
-1. Screenshot of the app showing the headline list.
+![News List screen](docs/news-list-screenshot.png)
+
+The screen shows the "New List" top bar, with a scrollable list of articles. Each row includes a thumbnail image, headline, and summary; "Press OK to expand" appears for items with more content. The hint "Long-press DPAD Down to refresh" is shown at the bottom.
+
+For submission, also include:
+
+1. Screenshot of the app showing the headline list (see above).
 2. Screenshot or frame showing the “Refreshing…” state (during long-press DPAD-Down).
 3. Short video: navigate list → long-press DPAD-Down → refreshed headlines.
 
